@@ -1,0 +1,134 @@
+# server.py
+import io
+import os
+import pickle
+import traceback
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image
+import numpy as np
+import uvicorn
+import torch
+from torchvision import models, transforms
+
+# ---------------------------------------------------
+# FASTAPI + CORS
+# ---------------------------------------------------
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------------------------------------------
+# CLASS LABELS
+# ---------------------------------------------------
+CLASS_LABELS = [
+    "Bathroom", "Bedroom", "Dining", "Gaming", "Kitchen",
+    "Laundry", "Living", "Office", "Terrace", "Yard"
+]
+
+# ---------------------------------------------------
+# LOAD SQUEEZENET (must output 1000-dim)
+# ---------------------------------------------------
+device = torch.device("cpu")
+
+snet = models.squeezenet1_1(weights=models.SqueezeNet1_1_Weights.DEFAULT)
+snet.eval()  # VERY IMPORTANT
+
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+])
+
+
+# ---------------------------------------------------
+# LOAD ORANGE MODEL
+# ---------------------------------------------------
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(SCRIPT_DIR, "model", "roomclassify.pkcls")
+
+print("🔎 Looking for model:", MODEL_PATH)
+print("📁 Exists:", os.path.exists(MODEL_PATH))
+
+try:
+    with open(MODEL_PATH, "rb") as f:
+        model = pickle.load(f)
+    print("✅ Orange model loaded!")
+except Exception:
+    print("❌ Failed loading model:")
+    traceback.print_exc()
+    model = None
+
+
+# ---------------------------------------------------
+# FEATURE EXTRACTION (MUST MATCH ORANGE → 1000 FEATURES)
+# ---------------------------------------------------
+def extract_features(img: Image.Image):
+    img = img.convert("RGB")
+    tensor = transform(img).unsqueeze(0)
+
+    with torch.no_grad():
+        logits = snet(tensor)          # shape: [1, 1000]
+
+    features = logits.cpu().numpy().astype(np.float32)
+
+    EXPECTED = model.domain.attributes.__len__()
+    if features.shape[1] != EXPECTED:
+        raise ValueError(
+            f"Feature mismatch: got {features.shape[1]}, expected {EXPECTED}"
+        )
+
+    return features
+
+
+# ---------------------------------------------------
+# PREDICT
+# ---------------------------------------------------
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    if model is None:
+        raise HTTPException(status_code=500, detail="Model not loaded.")
+
+    # Load image
+    try:
+        img_bytes = await file.read()
+        img = Image.open(io.BytesIO(img_bytes))
+    except:
+        raise HTTPException(status_code=400, detail="Invalid image")
+
+    # Extract features
+    try:
+        feat = extract_features(img)
+        print("🔍 Feature shape =", feat.shape)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Feature extraction error: {e}")
+
+    # Predict
+    try:
+        pred = model(feat)[0]
+        idx = int(pred)
+
+        room_label = CLASS_LABELS[idx]
+        print(f"🎯 Prediction:", room_label)
+
+        return {"prediction": room_label}
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Prediction failed: {e}")
+
+
+# ---------------------------------------------------
+# RUN SERVER
+# ---------------------------------------------------
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,184 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Train Model | RoomVision AI</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/feather-icons"></script>
+         <link href="https://fonts.cdnfonts.com/css/boldonse" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+        <style>
+            .glass-panel {
+                background-color: rgba(30, 30, 30, 0.85);
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-gray-900 via-purple-900 to-purple-800 min-h-screen text-white font-sans">
+
+        <custom-navbar></custom-navbar>
+
+        <main class="container mx-auto px-6 py-20">
+            <div class="max-w-2xl mx-auto text-center">
+                <h1 class="text-4xl font-bold mb-8 bg-clip-text text-white"  style="font-family: 'Boldonse', sans-serif;">
+                    Train Your AI Model
+                </h1>
+
+                <div class="glass-panel p-8 rounded-2xl">
+
+                    <!-- Upload Box (Fixed Size) -->
+                    <div id="uploadBox" class="border-2 border-dashed border-primary/50 rounded-xl mb-6 transition-all cursor-pointer min-h-[260px] flex items-center justify-center relative">
+
+                        <!-- Upload UI Content -->
+                        <div id="dropContent" class="text-center">
+                            <i data-feather="upload" class="w-12 h-12 mx-auto text-primary mb-4"></i>
+                            <p class="text-lg mb-2 text-white">Drag & drop your room images here</p>
+                            <p class="text-gray-400 mb-4">or</p>
+                            <button class="px-6 py-2 bg-primary/70 text-white rounded-lg hover:bg-primary/90 transition-colors">Browse Files</button>
+                        </div>
+
+                        <!-- Hidden File Input -->
+                        <input type="file" id="fileInput" class="hidden" accept="image/*">
+
+                        <!-- Preview Image (Centered) -->
+                        <div id="previewWrapper" class="hidden absolute inset-0 flex items-center justify-center">
+                            <img id="previewImage" class="max-h-[240px] rounded-xl object-contain" />
+                        </div>
+                    </div>
+
+                    <!-- Classification Result -->
+                    <div id="resultBox" class="hidden mt-4 p-4 bg-gray-800/60 rounded-xl text-white text-lg font-semibold text-center">
+                        Detected Room Type: <span id="roomType" class="text-primary">N/A</span>
+                    </div>
+
+                    <!-- Train Button -->
+                    <button id="trainBtn" class="w-full px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg hover:shadow-primary/50 transition-all flex items-center justify-center gap-2">
+                        <i data-feather="cpu"></i> Analyze Image
+                    </button>
+
+                    <!-- Progress Bar -->
+                    <div id="progressWrapper" class="mt-6 hidden">
+                        <p class="mb-2 text-white font-medium">Analyzing in progress...</p>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div id="progressBar" class="bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <custom-footer></custom-footer>
+
+        <script src="components/navbar.js"></script>
+        <script src="components/footer.js"></script>
+
+        <script>
+    // ... keep your existing element grabs above ...
+    const fileInput = document.getElementById('fileInput');
+    const uploadBox = document.getElementById('uploadBox');
+    const dropContent = document.getElementById('dropContent');
+    const previewWrapper = document.getElementById('previewWrapper');
+    const previewImage = document.getElementById('previewImage');
+    const trainBtn = document.getElementById('trainBtn');
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressBar = document.getElementById('progressBar');
+    const resultBox = document.getElementById('resultBox');
+    const roomTypeEl = document.getElementById('roomType');
+
+    let uploadedFile = null;
+
+    function showPreview(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            previewImage.src = event.target.result;
+            dropContent.classList.add('hidden');
+            previewWrapper.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        uploadedFile = e.target.files[0];
+        if (uploadedFile) showPreview(uploadedFile);
+    });
+
+    uploadBox.addEventListener('click', () => fileInput.click());
+    uploadBox.addEventListener('dragover', (e) => e.preventDefault());
+    uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadedFile = e.dataTransfer.files[0];
+        if (uploadedFile) showPreview(uploadedFile);
+    });
+
+    trainBtn.addEventListener("click", async () => {
+        if (!uploadedFile) {
+            alert("Please upload an image first.");
+            return;
+        }
+
+        // Show progress UI
+        progressWrapper.classList.remove("hidden");
+        progressBar.style.width = "0%";
+        resultBox.classList.add("hidden");  // hide previous result while loading
+
+        // fake loading animation (stops at 80% until real response)
+        let progress = 0;
+        const fakeLoading = setInterval(() => {
+            progress = Math.min(80, progress + 8);
+            progressBar.style.width = progress + "%";
+            if (progress >= 80) clearInterval(fakeLoading);
+        }, 120);
+
+        // prepare form
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+
+        try {
+            const response = await fetch("http://127.0.0.1:8000/predict", {
+                method: "POST",
+                body: formData
+            });
+
+            // finish fake loading
+            progressBar.style.width = "100%";
+
+            const result = await response.json().catch(() => null);
+
+ 
+            setTimeout(() => {
+                progressWrapper.classList.add("hidden");
+
+                if (!response.ok) {
+
+                    const msg = result && result.detail ? result.detail : "Server error — see console.";
+                    alert("Prediction failed: " + msg);
+                    console.error("Prediction failed:", result);
+                    return;
+                }
+
+                // Success: show prediction and keep preview visible until user dismisses
+                if (result && result.prediction) {
+                    roomTypeEl.textContent = result.prediction;
+                } else if (result && result.error) {
+                    roomTypeEl.textContent = "Error: " + result.error;
+                } else {
+                    roomTypeEl.textContent = "Unknown result";
+                }
+
+                resultBox.classList.remove("hidden");
+
+
+            }, 300);
+
+        } catch (err) {
+            progressWrapper.classList.add("hidden");
+            console.error("Connection error:", err);
+            alert("Error connecting to AI server. See console for details.");
+            // keep preview visible on network error
+        }
+    });
+</script>
+
+    </body>
+    </html>
