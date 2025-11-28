@@ -94,6 +94,9 @@
 
     let uploadedFile = null;
 
+    // Determine backend URL automatically:
+    const API_URL = window.location.origin + "/predict";
+
     function showPreview(file) {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -139,8 +142,8 @@
         formData.append("file", uploadedFile);
 
         try {
-            // FIXED URL ↓↓↓
-            const response = await fetch("/predict", {
+            // 🌐 AUTO-DETECT BACKEND URL (LOCAL OR RENDER)
+            const response = await fetch(API_URL, {
                 method: "POST",
                 body: formData
             });
@@ -167,7 +170,6 @@
                 }
 
                 resultBox.classList.remove("hidden");
-
             }, 300);
 
         } catch (err) {
