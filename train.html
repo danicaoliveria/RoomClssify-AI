@@ -79,103 +79,105 @@
 
     <!-- After components, load main script -->
     <script>
-        feather.replace();
+    feather.replace();
 
-        const fileInput = document.getElementById('fileInput');
-        const uploadBox = document.getElementById('uploadBox');
-        const dropContent = document.getElementById('dropContent');
-        const previewWrapper = document.getElementById('previewWrapper');
-        const previewImage = document.getElementById('previewImage');
-        const trainBtn = document.getElementById('trainBtn');
-        const progressWrapper = document.getElementById('progressWrapper');
-        const progressBar = document.getElementById('progressBar');
-        const resultBox = document.getElementById('resultBox');
-        const roomTypeEl = document.getElementById('roomType');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBox = document.getElementById('uploadBox');
+    const dropContent = document.getElementById('dropContent');
+    const previewWrapper = document.getElementById('previewWrapper');
+    const previewImage = document.getElementById('previewImage');
+    const trainBtn = document.getElementById('trainBtn');
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressBar = document.getElementById('progressBar');
+    const resultBox = document.getElementById('resultBox');
+    const roomTypeEl = document.getElementById('roomType');
 
-        let uploadedFile = null;
+    let uploadedFile = null;
 
-        function showPreview(file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                previewImage.src = event.target.result;
-                dropContent.classList.add('hidden');
-                previewWrapper.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
+    function showPreview(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            previewImage.src = event.target.result;
+            dropContent.classList.add('hidden');
+            previewWrapper.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    fileInput.addEventListener('change', (e) => {
+        uploadedFile = e.target.files[0];
+        if (uploadedFile) showPreview(uploadedFile);
+    });
+
+    uploadBox.addEventListener('click', () => fileInput.click());
+    uploadBox.addEventListener('dragover', (e) => e.preventDefault());
+    uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadedFile = e.dataTransfer.files[0];
+        if (uploadedFile) showPreview(uploadedFile);
+    });
+
+    trainBtn.addEventListener("click", async () => {
+
+        if (!uploadedFile) {
+            alert("Please upload an image first.");
+            return;
         }
 
-        fileInput.addEventListener('change', (e) => {
-            uploadedFile = e.target.files[0];
-            if (uploadedFile) showPreview(uploadedFile);
-        });
+        progressWrapper.classList.remove("hidden");
+        progressBar.style.width = "0%";
+        resultBox.classList.add("hidden");
 
-        uploadBox.addEventListener('click', () => fileInput.click());
-        uploadBox.addEventListener('dragover', (e) => e.preventDefault());
-        uploadBox.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadedFile = e.dataTransfer.files[0];
-            if (uploadedFile) showPreview(uploadedFile);
-        });
+        let progress = 0;
+        const fakeLoading = setInterval(() => {
+            progress = Math.min(80, progress + 8);
+            progressBar.style.width = progress + "%";
+            if (progress >= 80) clearInterval(fakeLoading);
+        }, 120);
 
-        trainBtn.addEventListener("click", async () => {
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
 
-            if (!uploadedFile) {
-                alert("Please upload an image first.");
-                return;
-            }
+        try {
+            // FIXED URL ↓↓↓
+            const response = await fetch("/predict", {
+                method: "POST",
+                body: formData
+            });
 
-            progressWrapper.classList.remove("hidden");
-            progressBar.style.width = "0%";
-            resultBox.classList.add("hidden");
+            progressBar.style.width = "100%";
+            const result = await response.json().catch(() => null);
 
-            let progress = 0;
-            const fakeLoading = setInterval(() => {
-                progress = Math.min(80, progress + 8);
-                progressBar.style.width = progress + "%";
-                if (progress >= 80) clearInterval(fakeLoading);
-            }, 120);
-
-            const formData = new FormData();
-            formData.append("file", uploadedFile);
-
-            try {
-                const response = await fetch("http://localhost:8000/predict", {
-                    method: "POST",
-                    body: formData
-                });
-
-                progressBar.style.width = "100%";
-                const result = await response.json().catch(() => null);
-
-                setTimeout(() => {
-                    progressWrapper.classList.add("hidden");
-
-                    if (!response.ok) {
-                        const msg = result?.detail || "Server error — see console.";
-                        alert("Prediction failed: " + msg);
-                        console.error("Prediction failed:", result);
-                        return;
-                    }
-
-                    if (result?.prediction) {
-                        roomTypeEl.textContent = result.prediction;
-                    } else if (result?.error) {
-                        roomTypeEl.textContent = "Error: " + result.error;
-                    } else {
-                        roomTypeEl.textContent = "Unknown result";
-                    }
-
-                    resultBox.classList.remove("hidden");
-
-                }, 300);
-
-            } catch (err) {
+            setTimeout(() => {
                 progressWrapper.classList.add("hidden");
-                console.error("Connection error:", err);
-                alert("Error connecting to AI server.");
-            }
-        });
-    </script>
+
+                if (!response.ok) {
+                    const msg = result?.detail || "Server error — see console.";
+                    alert("Prediction failed: " + msg);
+                    console.error("Prediction failed:", result);
+                    return;
+                }
+
+                if (result?.prediction) {
+                    roomTypeEl.textContent = result.prediction;
+                } else if (result?.error) {
+                    roomTypeEl.textContent = "Error: " + result.error;
+                } else {
+                    roomTypeEl.textContent = "Unknown result";
+                }
+
+                resultBox.classList.remove("hidden");
+
+            }, 300);
+
+        } catch (err) {
+            progressWrapper.classList.add("hidden");
+            console.error("Connection error:", err);
+            alert("Error connecting to AI server.");
+        }
+    });
+</script>
+
 
 </body>
 </html>
