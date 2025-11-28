@@ -19,21 +19,22 @@ MODEL_PATH = os.path.join(BASE_DIR, "model", "roomclassify.pkcls")
 # LOAD ORANGE MODEL
 # ---------------------------------------------------
 def load_model():
-    print(f"🔍 Checking model: {MODEL_PATH}")
+    print(f"🔍 Checking model file: {MODEL_PATH}")
 
     if not os.path.exists(MODEL_PATH):
         print("❌ Model file not found!")
         raise RuntimeError("Model file not found on server")
 
     try:
-        model = Orange.classification.TreeLearner()  # placeholder
-        model = Orange.core.Classifier.load(MODEL_PATH)
+        # CORRECT WAY to load Orange .pkcls model
+        model = Orange.classification.Model.from_pickle(MODEL_PATH)
         print("✅ Orange model loaded successfully")
         return model
 
     except Exception as e:
         print("❌ Error loading Orange model:", e)
         raise RuntimeError("Failed to load Orange model")
+
 
 model = load_model()
 
@@ -50,30 +51,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve components folder
+# Serve folder for frontend files
 app.mount("/Components", StaticFiles(directory=os.path.join(BASE_DIR, "Components")), name="Components")
-
-# Serve JS & CSS
 app.mount("/static", StaticFiles(directory=BASE_DIR), name="static")
 
-# Main frontend
 @app.get("/")
-def serve_frontend():
+def home():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 # ---------------------------------------------------
-# IMAGE PREPROCESSING FOR ORANGE
+# IMAGE PREPROCESSING
 # ---------------------------------------------------
 def preprocess_image(file_bytes):
     img = Image.open(io.BytesIO(file_bytes))
     img = img.convert("RGB")
     img = img.resize((100, 100))
-    arr = np.array(img).flatten()
 
-    return arr.tolist()  # Orange needs Python list, not numpy array
+    # Flatten image into numeric list
+    arr = np.array(img).flatten()
+    return arr.tolist()
 
 # ---------------------------------------------------
-# PREDICT ENDPOINT
+# PREDICTION ENDPOINT
 # ---------------------------------------------------
 @app.post("/predict")
 async def predict(image: UploadFile = File(...)):
@@ -81,8 +80,10 @@ async def predict(image: UploadFile = File(...)):
         contents = await image.read()
         feature_list = preprocess_image(contents)
 
+        # Convert list → Orange Instance
         example = Orange.data.Instance(model.domain, feature_list)
 
+        # Perform prediction
         prediction = model(example)
 
         return {"prediction": str(prediction)}
@@ -91,7 +92,7 @@ async def predict(image: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 
 # ---------------------------------------------------
-# UVICORN ENTRY
+# UVICORN RUNNER (RENDER USES THIS)
 # ---------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
