@@ -10,13 +10,21 @@ import numpy as np
 from PIL import Image
 import io
 import uvicorn
+import logging
+
+# ------------------------------
+# BASIC CONFIG
+# ------------------------------
+logging.basicConfig(level=logging.INFO)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
 app = FastAPI()
 
+# ------------------------------
 # CORS
+# ------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,11 +33,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static folders
+# ------------------------------
+# STATIC FOLDERS
+# ------------------------------
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/Components", StaticFiles(directory="Components"), name="components")
 
-# HTML pages
+# ------------------------------
+# HTML PAGES
+# ------------------------------
 @app.get("/")
 def home():
     return FileResponse("index.html")
@@ -38,7 +50,9 @@ def home():
 def train_page():
     return FileResponse("train.html")
 
-# CLASS LABELS (in exact order)
+# ------------------------------
+# CLASS LABELS (EXACT ORDER)
+# ------------------------------
 CLASS_LABELS = [
     "Bathroom",
     "Bedroom",
@@ -52,7 +66,9 @@ CLASS_LABELS = [
     "Yard",
 ]
 
-# Load model
+# ------------------------------
+# LOAD MODEL
+# ------------------------------
 def load_model():
     if not os.path.exists(MODEL_PATH):
         raise RuntimeError("Model not found at: " + MODEL_PATH)
@@ -62,41 +78,60 @@ def load_model():
 
 model = load_model()
 
-# Prediction endpoint
+# ------------------------------
+# PREDICT ENDPOINT
+# ------------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
         contents = await file.read()
 
-        # Load image as grayscale
+        # Load as grayscale
         img = Image.open(io.BytesIO(contents)).convert("L")
 
-        # Resize to 32x32 (1024 pixels)
+        # Resize to 32 × 32 → 1024 pixels
         img = img.resize((32, 32))
 
-        # Convert to array → 1024 features
-        arr = np.array(img).flatten()
-
-        # Reduce to exactly 1000 features
+        # Convert to 1000-feature vector
+        arr = np.array(img).flatten().astype(np.float32)
         arr = arr[:1000]
 
-        # Reshape for Orange model
-        arr = arr.reshape(1, -1)
+        # Normalize 0–1 (matches dataset creation)
+        arr = arr / 255.0
 
-        # Predict
-        pred_index = int(model.predict(arr)[0])
+        X = arr.reshape(1, -1)
 
-        # Map to label
+        # Try to get probabilities
+        top = []
+        try:
+            probs = model.predict_proba(X)[0]
+            idx = np.argsort(probs)[::-1][:3]  # top 3 indices
+            top = [
+                {"label": CLASS_LABELS[i], "prob": float(probs[i])}
+                for i in idx
+            ]
+        except:
+            logging.info("Model has no predict_proba")
+
+        # Predict class index
+        pred_index = int(model.predict(X)[0])
+        logging.info(f"Pred index = {pred_index}")
+
         if pred_index < 0 or pred_index >= len(CLASS_LABELS):
-            return {"prediction": "Unknown"}
+            return {"prediction": "Unknown", "top": top}
 
-        return {"prediction": CLASS_LABELS[pred_index]}
+        return {
+            "prediction": CLASS_LABELS[pred_index],
+            "top": top
+        }
 
     except Exception as e:
-        raise HTTPException(500, f"Prediction failed: {e}")
+        logging.exception("Prediction error")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
-
-# Run server
+# ------------------------------
+# RUN SERVER
+# ------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
