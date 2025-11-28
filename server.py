@@ -32,12 +32,12 @@ CLASS_LABELS = [
 ]
 
 # ---------------------------------------------------
-# LOAD SQUEEZENET (must output 1000-dim)
+# LOAD SQUEEZENET (extract 1000 features)
 # ---------------------------------------------------
 device = torch.device("cpu")
 
 snet = models.squeezenet1_1(weights=models.SqueezeNet1_1_Weights.DEFAULT)
-snet.eval()  # VERY IMPORTANT
+snet.eval()
 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -48,14 +48,11 @@ transform = transforms.Compose([
     )
 ])
 
-
 # ---------------------------------------------------
-# LOAD ORANGE MODEL
+# LOAD SKLEARN MODEL
 # ---------------------------------------------------
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = "model/model.pkl"
 
-# Load sklearn model
 try:
     with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
@@ -65,28 +62,20 @@ except Exception as e:
     print(e)
     model = None
 
-
-
 # ---------------------------------------------------
-# FEATURE EXTRACTION (MUST MATCH ORANGE → 1000 FEATURES)
+# FEATURE EXTRACTION
 # ---------------------------------------------------
 def extract_features(img: Image.Image):
     img = img.convert("RGB")
     tensor = transform(img).unsqueeze(0)
 
     with torch.no_grad():
-        logits = snet(tensor)          # shape: [1, 1000]
+        logits = snet(tensor)  # [1, 1000]
 
     features = logits.cpu().numpy().astype(np.float32)
 
-    EXPECTED = model.domain.attributes.__len__()
-    if features.shape[1] != EXPECTED:
-        raise ValueError(
-            f"Feature mismatch: got {features.shape[1]}, expected {EXPECTED}"
-        )
-
+    # sklearn expects shape (1, 1000)
     return features
-
 
 # ---------------------------------------------------
 # PREDICT
@@ -113,12 +102,9 @@ async def predict(file: UploadFile = File(...)):
 
     # Predict
     try:
-        pred = model(feat)[0]
-        idx = int(pred)
-
-        room_label = CLASS_LABELS[idx]
-        print(f"🎯 Prediction:", room_label)
-
+        pred_index = int(model.predict(feat)[0])
+        room_label = CLASS_LABELS[pred_index]
+        print("🎯 Prediction:", room_label)
         return {"prediction": room_label}
 
     except Exception as e:
