@@ -1,7 +1,7 @@
 import os
 import io
-import pickle
 import numpy as np
+import Orange
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,23 +13,27 @@ import uvicorn
 # PATHS
 # ---------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "room_classifier.pkcls")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "roomclassify.pkcls")
 
 # ---------------------------------------------------
-# LOAD MODEL
+# LOAD ORANGE MODEL
 # ---------------------------------------------------
 def load_model():
+    print(f"🔍 Checking model: {MODEL_PATH}")
+
     if not os.path.exists(MODEL_PATH):
+        print("❌ Model file not found!")
         raise RuntimeError("Model file not found on server")
 
     try:
-        with open(MODEL_PATH, "rb") as f:
-            model = pickle.load(f)
-        print("Model loaded successfully")
+        model = Orange.classification.TreeLearner()  # placeholder
+        model = Orange.core.Classifier.load(MODEL_PATH)
+        print("✅ Orange model loaded successfully")
         return model
+
     except Exception as e:
-        print("❌ ERROR loading model:", e)
-        raise RuntimeError("Failed to load model")
+        print("❌ Error loading Orange model:", e)
+        raise RuntimeError("Failed to load Orange model")
 
 model = load_model()
 
@@ -46,22 +50,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve your frontend
+# Serve components folder
 app.mount("/Components", StaticFiles(directory=os.path.join(BASE_DIR, "Components")), name="Components")
 
+# Serve JS & CSS
+app.mount("/static", StaticFiles(directory=BASE_DIR), name="static")
+
+# Main frontend
 @app.get("/")
 def serve_frontend():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 # ---------------------------------------------------
-# IMAGE PREPROCESSING
+# IMAGE PREPROCESSING FOR ORANGE
 # ---------------------------------------------------
-def preprocess_image(file):
-    img = Image.open(io.BytesIO(file))
+def preprocess_image(file_bytes):
+    img = Image.open(io.BytesIO(file_bytes))
     img = img.convert("RGB")
     img = img.resize((100, 100))
-    arr = np.array(img).flatten().reshape(1, -1)
-    return arr
+    arr = np.array(img).flatten()
+
+    return arr.tolist()  # Orange needs Python list, not numpy array
 
 # ---------------------------------------------------
 # PREDICT ENDPOINT
@@ -70,17 +79,19 @@ def preprocess_image(file):
 async def predict(image: UploadFile = File(...)):
     try:
         contents = await image.read()
-        processed = preprocess_image(contents)
-        prediction = model.predict(processed)[0]
+        feature_list = preprocess_image(contents)
+
+        example = Orange.data.Instance(model.domain, feature_list)
+
+        prediction = model(example)
 
         return {"prediction": str(prediction)}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 
 # ---------------------------------------------------
-# RUN SERVER (Render auto-runs with Uvicorn)
+# UVICORN ENTRY
 # ---------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
