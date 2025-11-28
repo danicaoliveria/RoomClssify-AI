@@ -1,7 +1,7 @@
 import os
 import io
+import pickle
 import numpy as np
-import Orange
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,28 +13,28 @@ import uvicorn
 # PATHS
 # ---------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "roomclassify.pkcls")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")   # <-- NEW FILE
 
 # ---------------------------------------------------
-# LOAD ORANGE MODEL
+# LOAD SCIKIT-LEARN MODEL
 # ---------------------------------------------------
 def load_model():
-    print(f"🔍 Checking model file: {MODEL_PATH}")
+    print(f"🔍 Loading scikit-learn model from: {MODEL_PATH}")
 
     if not os.path.exists(MODEL_PATH):
-        print("❌ Model file not found!")
-        raise RuntimeError("Model file not found on server")
+        print("❌ ERROR: model.pkl not found!")
+        raise RuntimeError("model.pkl file missing")
 
     try:
-        # CORRECT WAY to load Orange .pkcls model
-        model = Orange.classification.Model.from_pickle(MODEL_PATH)
-        print("✅ Orange model loaded successfully")
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+
+        print("✅ Model loaded successfully:", type(model))
         return model
 
     except Exception as e:
-        print("❌ Error loading Orange model:", e)
-        raise RuntimeError("Failed to load Orange model")
-
+        print("❌ Error loading model:", e)
+        raise RuntimeError("Failed to load scikit-learn model")
 
 model = load_model()
 
@@ -69,7 +69,7 @@ def preprocess_image(file_bytes):
 
     # Flatten image into numeric list
     arr = np.array(img).flatten()
-    return arr.tolist()
+    return arr.reshape(1, -1)  # sklearn needs 2D input
 
 # ---------------------------------------------------
 # PREDICTION ENDPOINT
@@ -78,13 +78,9 @@ def preprocess_image(file_bytes):
 async def predict(image: UploadFile = File(...)):
     try:
         contents = await image.read()
-        feature_list = preprocess_image(contents)
+        processed = preprocess_image(contents)
 
-        # Convert list → Orange Instance
-        example = Orange.data.Instance(model.domain, feature_list)
-
-        # Perform prediction
-        prediction = model(example)
+        prediction = model.predict(processed)[0]
 
         return {"prediction": str(prediction)}
 
@@ -92,7 +88,7 @@ async def predict(image: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 
 # ---------------------------------------------------
-# UVICORN RUNNER (RENDER USES THIS)
+# UVICORN RUNNER
 # ---------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

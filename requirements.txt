@@ -3,4 +3,3 @@ uvicorn
 pillow
 numpy
 scikit-learn
-orange3
