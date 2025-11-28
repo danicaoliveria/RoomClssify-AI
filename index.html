@@ -7,7 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+
+    <!-- UPDATED -->
+    <link rel="stylesheet" href="/static/style.css">
+
     <link href="https://fonts.cdnfonts.com/css/boldonse" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 
@@ -25,318 +28,183 @@
         }
     </script>
 </head>
+
 <body class="bg-gradient-to-br from-dark via-gray-900 to-purple-900 min-h-screen text-white font-sans">
+    
     <!-- Navbar Component -->
     <custom-navbar></custom-navbar>
-<!-- Hero Section -->
-<section class="relative w-full h-screen bg-cover bg-center" style="background-image: url('images/header2.jpg');">
 
-    <!-- Overlay -->
-    <div class="absolute inset-0 bg-black/50"></div>
+    <!-- Hero Section -->
+    <section class="relative w-full h-screen bg-cover bg-center" 
+        style="background-image: url('/static/images/header2.jpg');">
 
-    <!-- Content centered -->
+        <div class="absolute inset-0 bg-black/50"></div>
 
-    <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-6">
-        <h1 class="text-5xl md:text-6xl font-bold mb-6 text-white"
-    style="font-family: 'Boldonse', sans-serif;">
-    
-    AI Room 
-    
-    <span id="typing-text"
-        class="bg-clip-text text-white"
-        style="
-            font-family: 'Great Vibes', cursive; 
-            font-weight: 400;
-            letter-spacing: 4px;
-            margin-left: 12px;
-            font-size: 1.3em;
-        ">
-    </span>
+        <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-6">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 text-white"
+                style="font-family: 'Boldonse', sans-serif;">
 
-    <span id="cursor" class="inline-block animate-blink ml-1">|</span>
-</h1>
+                AI Room 
 
-    <p class="text-xl text-gray-200 mb-8 mx-auto max-w-2xl text-center leading-relaxed">
-    Tech it easy and let RoomClassify do the hard work while you sit back and admire your perfectly classified spaces.
-    </p>
+                <span id="typing-text"
+                    class="bg-clip-text text-white"
+                    style="
+                        font-family: 'Great Vibes', cursive;
+                        letter-spacing: 4px;
+                        margin-left: 12px;
+                        font-size: 1.3em;
+                    ">
+                </span>
 
-        <a href="train.html" class="inline-block px-8 py-4 bg-gradient-to-r from-primary to-secondary rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 transform hover:scale-105">
-            Get Started
-        </a>
-    </div>
-</section>
+                <span id="cursor" class="inline-block animate-blink ml-1">|</span>
+            </h1>
 
-<!-- Cursor animation -->
-<style>
-@keyframes blink {
-    0%, 50%, 100% { opacity: 1; }
-    25%, 75% { opacity: 0; }
-}
-.animate-blink {
-    animation: blink 1s infinite;
-}
-</style>
-
-
-
-
-<!-- About Us Section -->
-<section class="container mx-auto px-6 py-32">
-    <div class="flex flex-col lg:flex-row items-center gap-12">
-
-        <!-- Text content -->
-        <div class="lg:w-1/2 space-y-6 text-center lg:text-left lg:pl-12">
-        <h2 class="text-4xl md:text-5xl font-bold mb-4 
-           bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent tracking-wide leading-[1.2]"
-    style="padding-top: 9px; font-family: 'Great Vibes', cursive; font-weight: 600; letter-spacing: 2px;">
-    About Us
-</h2>
-
-
-
-
-            <p class="text-lg text-white leading-relaxed">
-                RoomVision AI is built to help users classify room types instantly using advanced machine learning. 
-                Whether you're a student, a developer, or a business user, our platform lets you upload images, 
-                test predictions, and understand room environments with ease.<br><br>
-                
-                Our goal is to make AI-powered room recognition simple, accessible, and efficient — all in just a few clicks.
+            <p class="text-xl text-gray-200 mb-8 max-w-2xl">
+                Tech it easy and let RoomClassify do the hard work while you sit back and admire your perfectly classified spaces.
             </p>
-        </div>
 
-        <!-- Image content with floating animation -->
-        <div class="lg:w-1/2 flex justify-center">
-            <img src="images/header.jpg" alt="About Us Image" class="rounded-2xl w-4/5 h-auto object-cover shadow-lg floating">
-        </div>
-    </div>
-</section>
-
-
-
-<!-- Features Section -->
-<section class="container mx-auto px-6 sm:px-12 md:px-16 lg:px-24 py-16">
-    <h2 class="text-3xl font-bold text-center mb-12 text-white">Key Features</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Feature 1 -->
-        <div class="glass-panel p-8 rounded-2xl hover:shadow-lg hover:shadow-primary/20 transition-all duration-300">
-            <div class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-4">
-                <i data-feather="zap" class="text-primary"></i>
-            </div>
-            <h3 class="text-xl font-semibold mb-2 text-white">Fast Classification</h3>
-            <p class="text-gray-300">Get instant room type predictions with our optimized AI model.</p>
-        </div>
-        
-        <!-- Feature 2 -->
-        <div class="glass-panel p-8 rounded-2xl hover:shadow-lg hover:shadow-primary/20 transition-all duration-300">
-            <div class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-4">
-                <i data-feather="cpu" class="text-primary"></i>
-            </div>
-            <h3 class="text-xl font-semibold mb-2 text-white">Train Your Model</h3>
-            <p class="text-gray-300">Customize and train the AI with your own room datasets.</p>
-        </div>
-        
-        <!-- Feature 3 -->
-        <div class="glass-panel p-8 rounded-2xl hover:shadow-lg hover:shadow-primary/20 transition-all duration-300">
-            <div class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-4">
-                <i data-feather="user" class="text-primary"></i>
-            </div>
-            <h3 class="text-xl font-semibold mb-2 text-white">Easy Interface</h3>
-            <p class="text-gray-300">Intuitive controls designed for all user levels.</p>
-        </div>
-    </div>
-</section>
-
-
-<!-- How It Works Section -->
-<section class="container mx-auto px-6 sm:px-12 md:px-16 py-32">
-    <h2 class="text-3xl md:text-4xl font-bold text-center text-white mb-16">
-        How It Works
-    </h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-        <!-- Step 1 -->
-        <div class="relative flex flex-col items-center text-center group">
-            <!-- Number in circle outside -->
-            <div class="absolute -top-8 w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white font-bold text-xl z-10">
-                1
-            </div>
-            <!-- Image Card -->
-            <div class="relative mt-10 w-full h-64 rounded-2xl overflow-hidden shadow-lg transform transition-transform duration-500 group-hover:scale-105">
-                <img src="https://images.unsplash.com/photo-1586105251261-72a756497a11?q=80&w=1920" alt="Step 1" class="w-full h-full object-cover rounded-2xl">
-                <!-- Overlay content -->
-                <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3 p-4 opacity-100 transition-opacity duration-500 group-hover:opacity-90">
-                    <div class="w-12 h-12 bg-primary/30 rounded-full flex items-center justify-center">
-                        <i data-feather="upload" class="text-white w-6 h-6"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white">Upload a Room Photo</h3>
-                    <p class="text-gray-200 text-center text-sm">Simply upload an image of any room you want to classify.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 2 -->
-        <div class="relative flex flex-col items-center text-center group">
-            <div class="absolute -top-8 w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white font-bold text-xl z-10">
-                2
-            </div>
-            <div class="relative mt-10 w-full h-64 rounded-2xl overflow-hidden shadow-lg transform transition-transform duration-500 group-hover:scale-105">
-                <img src="http://static.photos/indoor/1024x576/2" alt="Step 2" class="w-full h-full object-cover rounded-2xl">
-                <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3 p-4 opacity-100 transition-opacity duration-500 group-hover:opacity-90">
-                    <div class="w-12 h-12 bg-primary/30 rounded-full flex items-center justify-center">
-                        <i data-feather="cpu" class="text-white w-6 h-6"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white">Train or Test</h3>
-                    <p class="text-gray-200 text-center text-sm">Choose to train the model or test with existing knowledge.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 3 -->
-        <div class="relative flex flex-col items-center text-center group">
-            <div class="absolute -top-8 w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white font-bold text-xl z-10">
-                3
-            </div>
-            <div class="relative mt-10 w-full h-64 rounded-2xl overflow-hidden shadow-lg transform transition-transform duration-500 group-hover:scale-105">
-                <img src="images/dining area.jpg" alt="Step 3" class="w-full h-full object-cover rounded-2xl">
-                <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3 p-4 opacity-100 transition-opacity duration-500 group-hover:opacity-90">
-                    <div class="w-12 h-12 bg-primary/30 rounded-full flex items-center justify-center">
-                        <i data-feather="check-circle" class="text-white w-6 h-6"></i>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white">Get Predictions</h3>
-                    <p class="text-gray-200 text-center text-sm">Receive accurate room type classification instantly.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-
-   <!-- Demo Preview Section -->
-<section class="py-32">
-    <div class="container mx-auto px-6">
-        <h2 class="text-3xl md:text-4xl font-bold text-center text-white mb-16">See It In Action</h2>
-        
-        <div class="flex space-x-8 overflow-x-auto pb-4 scrollbar-hide">
-            <!-- Bedroom -->
-            <div class="min-w-[300px] md:min-w-[350px] group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 flex-shrink-0">
-                <img src="images/bedroom.jpg" alt="Bedroom" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105 rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-white">Bedroom</h3>
-                    <p class="text-sm text-white/80 mt-1">Comfortable sleeping area</p>
-                </div>
-            </div>
-            
-            <!-- Kitchen -->
-            <div class="min-w-[300px] md:min-w-[350px] group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 flex-shrink-0">
-                <img src="images/kitchen.jpg" alt="Kitchen" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105 rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-white">Kitchen</h3>
-                    <p class="text-sm text-white/80 mt-1">Space for cooking and dining</p>
-                </div>
-            </div>
-            
-            <!-- Bathroom -->
-            <div class="min-w-[300px] md:min-w-[350px] group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 flex-shrink-0">
-                <img src="images/bathroom.jpg" alt="Bathroom" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105 rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-white">Bathroom</h3>
-                    <p class="text-sm text-white/80 mt-1">Clean and private space</p>
-                </div>
-            </div>
-
-            <!-- Office -->
-            <div class="min-w-[300px] md:min-w-[350px] group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 flex-shrink-0">
-                <img src="images/office.jpg" alt="Office" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105 rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-white">Office</h3>
-                    <p class="text-sm text-white/80 mt-1">Productive workspace</p>
-                </div>
-            </div>
-
-            <!-- Closet -->
-            <div class="min-w-[300px] md:min-w-[350px] group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 flex-shrink-0">
-                <img src="images/closet.jpg" alt="Closet" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105 rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-white">Closet</h3>
-                    <p class="text-sm text-white/80 mt-1">Organized storage space</p>
-                </div>
-            </div>
-
-            <!-- Dining Area -->
-            <div class="min-w-[300px] md:min-w-[350px] group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-xl transition-all duration-500 flex-shrink-0">
-                <img src="images/dining area.jpg" alt="Dining Area" class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105 rounded-3xl">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 rounded-3xl">
-                    <h3 class="text-2xl font-bold text-white">Dining Area</h3>
-                    <p class="text-sm text-white/80 mt-1">Place for meals and gatherings</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<style>
-/* Hide scrollbar but keep scrollable */
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
-}
-.scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
-</style>
-
-
-    <!-- Benefits Section -->
-    <section class="container mx-auto px-6 py-16">
-        <h2 class="text-3xl font-bold text-center mb-12">Why This System Is Useful</h2>
-        <div class="glass-panel max-w-4xl mx-auto p-8 rounded-2xl">
-            <ul class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <li class="flex items-start space-x-3">
-                    <i data-feather="check-circle" class="text-primary mt-1"></i>
-                    <span>Organizes and categorizes room datasets automatically</span>
-                </li>
-                <li class="flex items-start space-x-3">
-                    <i data-feather="check-circle" class="text-primary mt-1"></i>
-                    <span>Enhances real estate listings with accurate room tags</span>
-                </li>
-                <li class="flex items-start space-x-3">
-                    <i data-feather="check-circle" class="text-primary mt-1"></i>
-                    <span>Supports smart home systems with room awareness</span>
-                </li>
-                <li class="flex items-start space-x-3">
-                    <i data-feather="check-circle" class="text-primary mt-1"></i>
-                    <span>Useful for interior design applications and AR tools</span>
-                </li>
-                <li class="flex items-start space-x-3">
-                    <i data-feather="check-circle" class="text-primary mt-1"></i>
-                    <span>Helps in property management and facility planning</span>
-                </li>
-                <li class="flex items-start space-x-3">
-                    <i data-feather="check-circle" class="text-primary mt-1"></i>
-                    <span>Provides valuable data for home automation systems</span>
-                </li>
-            </ul>
+            <a href="/train"
+               class="inline-block px-8 py-4 bg-gradient-to-r from-primary to-secondary 
+               rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-primary/30 
+               transition-all duration-300 transform hover:scale-105">
+                Get Started
+            </a>
         </div>
     </section>
 
-    <!-- Final CTA Section -->
+    <!-- Cursor animation -->
+    <style>
+        @keyframes blink { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0;} }
+        .animate-blink { animation: blink 1s infinite; }
+    </style>
+
+    <!-- About Us Section -->
+    <section class="container mx-auto px-6 py-32">
+        <div class="flex flex-col lg:flex-row items-center gap-12">
+
+            <div class="lg:w-1/2 space-y-6 text-center lg:text-left lg:pl-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 
+                    bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent tracking-wide"
+                    style="font-family:'Great Vibes', cursive;">
+                    About Us
+                </h2>
+
+                <p class="text-lg text-white leading-relaxed">
+                    RoomVision AI is built to help users classify rooms instantly using machine learning.
+                    Upload images, test predictions, and explore room environments easily.
+                </p>
+            </div>
+
+            <div class="lg:w-1/2 flex justify-center">
+                <img src="/static/images/header.jpg" class="rounded-2xl w-4/5 shadow-lg floating">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container mx-auto px-6 py-16">
+        <h2 class="text-3xl font-bold text-center mb-12 text-white">Key Features</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <div class="glass-panel p-8 rounded-2xl">
+                <i data-feather="zap" class="text-primary w-10 h-10"></i>
+                <h3 class="text-xl font-semibold text-white mt-4">Fast Classification</h3>
+                <p class="text-gray-300">Instant room predictions with optimized AI.</p>
+            </div>
+
+            <div class="glass-panel p-8 rounded-2xl">
+                <i data-feather="cpu" class="text-primary w-10 h-10"></i>
+                <h3 class="text-xl font-semibold text-white mt-4">Train Your Model</h3>
+                <p class="text-gray-300">Use your own datasets to train.</p>
+            </div>
+
+            <div class="glass-panel p-8 rounded-2xl">
+                <i data-feather="user" class="text-primary w-10 h-10"></i>
+                <h3 class="text-xl font-semibold text-white mt-4">Easy Interface</h3>
+                <p class="text-gray-300">Designed for all levels.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="container mx-auto px-6 py-32">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-16 text-white">How It Works</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <div class="group relative text-center">
+                <img src="https://images.unsplash.com/photo-1586105251261-72a756497a11?q=80" 
+                     class="rounded-2xl w-full h-64 object-cover">
+            </div>
+
+            <div class="group relative text-center">
+                <img src="http://static.photos/indoor/1024x576/2" 
+                     class="rounded-2xl w-full h-64 object-cover">
+            </div>
+
+            <div class="group relative text-center">
+                <img src="/static/images/dining area.jpg" 
+                     class="rounded-2xl w-full h-64 object-cover">
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Demo Preview Section -->
+    <section class="py-32">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-white mb-16">
+                See It In Action
+            </h2>
+
+            <div class="flex space-x-8 overflow-x-auto pb-4 scrollbar-hide">
+
+                <div class="min-w-[300px]">
+                    <img src="/static/images/bedroom.jpg" class="rounded-3xl w-full h-80 object-cover">
+                </div>
+
+                <div class="min-w-[300px]">
+                    <img src="/static/images/kitchen.jpg" class="rounded-3xl w-full h-80 object-cover">
+                </div>
+
+                <div class="min-w-[300px]">
+                    <img src="/static/images/bathroom.jpg" class="rounded-3xl w-full h-80 object-cover">
+                </div>
+
+                <div class="min-w-[300px]">
+                    <img src="/static/images/office.jpg" class="rounded-3xl w-full h-80 object-cover">
+                </div>
+
+                <div class="min-w-[300px]">
+                    <img src="/static/images/closet.jpg" class="rounded-3xl w-full h-80 object-cover">
+                </div>
+
+                <div class="min-w-[300px]">
+                    <img src="/static/images/dining area.jpg" class="rounded-3xl w-full h-80 object-cover">
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
     <section class="container mx-auto px-6 py-20 text-center">
         <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to Classify Rooms with AI?</h2>
-        <a href="train.html" class="inline-block px-8 py-4 bg-gradient-to-r from-primary to-secondary rounded-full text-lg font-semibold hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 transform hover:scale-105">
+        <a href="/train"
+           class="inline-block px-8 py-4 bg-gradient-to-r from-primary to-secondary rounded-full text-lg">
             Get Started Now
         </a>
     </section>
 
-    <!-- Footer Component -->
+    <!-- Footer -->
     <custom-footer></custom-footer>
 
-    <!-- Scripts -->
-    <script src="components/navbar.js"></script>
-    <script src="components/footer.js"></script>
-    <script src="script.js"></script>
-    <script>
-        feather.replace();
-    </script>
+    <!-- Updated Scripts -->
+    <script src="/Components/navbar.js"></script>
+    <script src="/Components/footer.js"></script>
+    <script src="/static/script.js"></script>
+
+    <script> feather.replace(); </script>
+
 </body>
 </html>
