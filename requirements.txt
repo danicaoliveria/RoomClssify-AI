@@ -1,6 +1,6 @@
 fastapi
-uvicorn[standard]
-numpy
+uvicorn
 pillow
+numpy
 scikit-learn
-python-multipart
+orange3
