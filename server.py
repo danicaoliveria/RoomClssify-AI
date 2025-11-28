@@ -53,19 +53,18 @@ transform = transforms.Compose([
 # LOAD ORANGE MODEL
 # ---------------------------------------------------
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(SCRIPT_DIR, "model", "roomclassify.pkcls")
+MODEL_PATH = "model/model.pkl"
 
-print("🔎 Looking for model:", MODEL_PATH)
-print("📁 Exists:", os.path.exists(MODEL_PATH))
-
+# Load sklearn model
 try:
     with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
-    print("✅ Orange model loaded!")
-except Exception:
+    print("✅ Loaded sklearn model!")
+except Exception as e:
     print("❌ Failed loading model:")
-    traceback.print_exc()
+    print(e)
     model = None
+
 
 
 # ---------------------------------------------------
