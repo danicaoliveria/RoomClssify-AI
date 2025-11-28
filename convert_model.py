@@ -1,23 +1,26 @@
 import pickle
+import Orange
 import os
 
-# Path to your Orange .pkcls
 input_path = os.path.join("model", "roomclassify.pkcls")
 output_path = os.path.join("model", "model.pkl")
 
 print("Loading Orange .pkcls:", input_path)
 
+with open(input_path, "rb") as f:
+    orange_model = pickle.load(f)
+
+print("Loaded type:", type(orange_model))
+
+# Extract the true sklearn model inside Orange model
 try:
-    with open(input_path, "rb") as f:
-        model = pickle.load(f)  # Orange stores sklearn models directly
+    sklearn_model = orange_model.skl_model     # Works for RandomForest, Tree, SVM, etc.
+    print("Extracted scikit-learn model:", type(sklearn_model))
+except:
+    raise RuntimeError("❌ Could not extract sklearn model. This Orange model type is unsupported.")
 
-    print("Loaded model type:", type(model))
+# Save pure sklearn model
+with open(output_path, "wb") as f:
+    pickle.dump(sklearn_model, f)
 
-    # Save as standard scikit-learn pickle
-    with open(output_path, "wb") as f:
-        pickle.dump(model, f)
-
-    print("✅ Conversion complete! Saved as:", output_path)
-
-except Exception as e:
-    print("❌ Error converting model:", e)
+print("✅ Conversion complete! Saved as:", output_path)
