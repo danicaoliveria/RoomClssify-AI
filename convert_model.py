@@ -1,22 +1,23 @@
 import pickle
-import Orange
 import os
 
-# Path to your Orange model
-path = os.path.join("model", "roomclassify.pkcls")
-
-print("Loading:", path)
-
-# Load the model (Orange automatically loads sklearn estimators)
-with open(path, "rb") as f:
-    model = pickle.load(f)
-
-print("Loaded type:", type(model))
-
-# Save as pure scikit-learn model
+# Path to your Orange .pkcls
+input_path = os.path.join("model", "roomclassify.pkcls")
 output_path = os.path.join("model", "model.pkl")
 
-with open(output_path, "wb") as f:
-    pickle.dump(model, f)
+print("Loading Orange .pkcls:", input_path)
 
-print("Conversion complete! Saved:", output_path)
+try:
+    with open(input_path, "rb") as f:
+        model = pickle.load(f)  # Orange stores sklearn models directly
+
+    print("Loaded model type:", type(model))
+
+    # Save as standard scikit-learn pickle
+    with open(output_path, "wb") as f:
+        pickle.dump(model, f)
+
+    print("✅ Conversion complete! Saved as:", output_path)
+
+except Exception as e:
+    print("❌ Error converting model:", e)
