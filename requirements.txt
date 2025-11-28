@@ -1,7 +1,6 @@
 fastapi
-uvicorn
-python-multipart
-pillow
+uvicorn[standard]
 numpy
-torch
-torchvision
+pillow
+scikit-learn
+python-multipart
