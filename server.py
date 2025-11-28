@@ -24,9 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve JS, CSS, images, and components
+# Serve static folders
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/Components", StaticFiles(directory="Components"), name="components")
-app.mount("/images", StaticFiles(directory="images"), name="images")
 
 # Serve root HTML files
 @app.get("/")
