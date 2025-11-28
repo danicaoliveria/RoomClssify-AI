@@ -68,17 +68,25 @@ async def predict(file: UploadFile = File(...)):
     try:
         contents = await file.read()
 
-        # Load image and resize to 100x100
-        img = Image.open(io.BytesIO(contents)).convert("RGB")
-        img = img.resize((100, 100))
+        # Load image as grayscale
+        img = Image.open(io.BytesIO(contents)).convert("L")
 
-        # Flatten image → 100x100x3 = 30,000 features
-        arr = np.array(img).flatten().reshape(1, -1)
+        # Resize to 32x32 (1024 pixels)
+        img = img.resize((32, 32))
 
-        # Predict using Orange model
+        # Convert to array → 1024 features
+        arr = np.array(img).flatten()
+
+        # Reduce to exactly 1000 features
+        arr = arr[:1000]
+
+        # Reshape for Orange model
+        arr = arr.reshape(1, -1)
+
+        # Predict
         pred_index = int(model.predict(arr)[0])
 
-        # Convert index → label
+        # Map to label
         if pred_index < 0 or pred_index >= len(CLASS_LABELS):
             return {"prediction": "Unknown"}
 
@@ -86,6 +94,7 @@ async def predict(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(500, f"Prediction failed: {e}")
+
 
 # Run server
 if __name__ == "__main__":
