@@ -40,7 +40,7 @@ app.add_middleware(
 
 
 # ----------------------------------------------------
-# STATIC FILES + HTML
+# STATIC FILES + HTML ROUTES
 # ----------------------------------------------------
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/Components", StaticFiles(directory="Components"), name="components")
@@ -72,7 +72,7 @@ model = load_model()
 
 
 # ----------------------------------------------------
-# CLASS LABELS (from your training)
+# CLASS LABELS
 # ----------------------------------------------------
 CLASS_LABELS = [
     "Bathroom",
@@ -100,7 +100,7 @@ def detect_features(m):
     if coef is not None:
         return int(coef.shape[1])
 
-    return 1000  # fallback (your model expects 1000)
+    return 1000  # fallback (your model uses 1024 normally)
 
 
 EXPECTED_FEATURES = detect_features(model)
@@ -108,12 +108,12 @@ logging.info(f"Model expects {EXPECTED_FEATURES} features.")
 
 
 # ----------------------------------------------------
-# PREDICT ENDPOINT
+# PREDICT ENDPOINT (FULLY FIXED)
 # ----------------------------------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
-        # Read image
+        # Read image file
         contents = await file.read()
         img = Image.open(io.BytesIO(contents)).convert("L")
         img = img.resize((32, 32))
@@ -122,12 +122,9 @@ async def predict(file: UploadFile = File(...)):
         arr = np.array(img).flatten().astype(np.float64) / 255.0
         original_len = len(arr)
 
-        # ------------------------------------------------
-        # FIX — match model's expected features
-        # ------------------------------------------------
+        # Match expected feature size
         if original_len > EXPECTED_FEATURES:
             arr = arr[:EXPECTED_FEATURES]
-
         else:
             padded = np.zeros(EXPECTED_FEATURES, dtype=np.float64)
             padded[:original_len] = arr
@@ -135,20 +132,22 @@ async def predict(file: UploadFile = File(...)):
 
         X = arr.reshape(1, -1)
 
-        # ------------------------------------------------
-        # PREDICT LABEL (convert index → class label)
-        # ------------------------------------------------
+        # Model prediction
         raw_pred = model.predict(X)[0]
 
-        # If model returns integer classes
-        if isinstance(raw_pred, (int, np.integer)) and raw_pred < len(CLASS_LABELS):
-            prediction = CLASS_LABELS[int(raw_pred)]
+        # Fix: Convert float output (e.g., 7.0) → int
+        try:
+            pred_int = int(raw_pred)
+        except:
+            pred_int = None
+
+        # Map prediction → class label
+        if pred_int is not None and 0 <= pred_int < len(CLASS_LABELS):
+            prediction = CLASS_LABELS[pred_int]
         else:
             prediction = str(raw_pred)
 
-        # ------------------------------------------------
-        # TOP-3 PREDICTIONS (if model supports probability)
-        # ------------------------------------------------
+        # Optional: top 3 predictions if model supports probability
         top3 = []
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(X)[0]
