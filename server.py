@@ -83,59 +83,57 @@ model = load_model()
 # -------------------------------------------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-
     try:
         contents = await file.read()
 
-        # Convert to grayscale (MUST match training)
+        # Load image (grayscale)
         img = Image.open(io.BytesIO(contents)).convert("L")
+
+        # Resize to 32×32 (1024 pixels)
         img = img.resize((32, 32))
 
-        # Flatten to vector
-        arr = np.array(img).flatten().astype(np.float64)
-        arr = arr / 255.0  # normalization from training
+        # Flatten to 1024
+        arr = np.array(img).flatten().astype(np.float32)
 
-        # Make 2D for model
+        # --- FIX: match model's expected length (1000) ---
+        expected_len = 1000
+        if arr.size > expected_len:
+            arr = arr[:expected_len]
+        elif arr.size < expected_len:
+            padded = np.zeros(expected_len, dtype=np.float32)
+            padded[:arr.size] = arr
+            arr = padded
+        # ------------------------------------------------
+
+        # Normalize
+        arr = arr / 255.0
         X = arr.reshape(1, -1)
 
-        # --------------------------
-        # Predict
-        # --------------------------
-        raw_pred = model.predict(X)[0]
+        # Predict class index
+        pred_index = int(model.predict(X)[0])
 
-        logging.info(f"Raw prediction from model: {raw_pred}")
-
-        # If model outputs integer index
-        if isinstance(raw_pred, (int, np.integer)):
-            if 0 <= raw_pred < len(CLASS_LABELS):
-                prediction = CLASS_LABELS[raw_pred]
-            else:
-                prediction = "Unknown"
-        else:
-            # If model outputs a string label
-            prediction = str(raw_pred)
-
-        # --------------------------
-        # Try to get probabilities
-        # --------------------------
+        # Top-3 (if available)
         top = []
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(X)[0]
-            top_indices = probs.argsort()[::-1][:3]
-            top = [
-                {"label": CLASS_LABELS[i], "prob": float(probs[i])}
-                for i in top_indices
-            ]
+            idx = np.argsort(probs)[::-1][:3]
+            top = [{
+                "label": CLASS_LABELS[i],
+                "prob": float(probs[i])
+            } for i in idx]
 
-        return {
-            "prediction": prediction,
-            "prediction_index": int(raw_pred) if isinstance(raw_pred, (int, np.integer)) else None,
-            "top": top,
-        }
+        # Validate prediction
+        if pred_index < 0 or pred_index >= len(CLASS_LABELS):
+            prediction = "Unknown"
+        else:
+            prediction = CLASS_LABELS[pred_index]
+
+        return {"prediction": prediction, "top": top}
 
     except Exception as e:
-        logging.exception("Prediction failed")
+        logging.exception("Prediction error")
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+
 
 
 # -------------------------------------------------------------
