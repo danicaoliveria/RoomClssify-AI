@@ -86,48 +86,78 @@ async def predict(file: UploadFile = File(...)):
     try:
         contents = await file.read()
 
-        # Load as grayscale
+        # Load image in the same mode used for training
+        # (try "L" for grayscale; change to "RGB" if your model used color images)
         img = Image.open(io.BytesIO(contents)).convert("L")
 
-        # Resize to 32 × 32 → 1024 pixels
+        # Resize to expected size - change if training used a different size
         img = img.resize((32, 32))
 
-        # Convert to 1000-feature vector
-        arr = np.array(img).flatten().astype(np.float32)
-        arr = arr[:1000]
+        # Flatten
+        arr = np.array(img).flatten().astype(np.float64)  # use float64 for sklearn
 
-        # Normalize 0–1 (matches dataset creation)
+        # Determine expected feature length from model if possible
+        expected_len = getattr(model, "n_features_in_", None)
+        if expected_len is None:
+            # fallback: if model has attribute `coef_` or similar, try to infer
+            try:
+                expected_len = model.coef_.shape[1]
+            except Exception:
+                expected_len = arr.size  # last resort
+
+        if arr.size != expected_len:
+            logging.info(f"Input feature size ({arr.size}) != model expects ({expected_len}). "
+                         "Padding or trimming the input to match the model.")
+
+        # Pad or trim to expected_len (pad with zeros)
+        if arr.size < expected_len:
+            padded = np.zeros(expected_len, dtype=np.float64)
+            padded[:arr.size] = arr
+            arr = padded
+        elif arr.size > expected_len:
+            arr = arr[:expected_len]
+
+        # Normalize the same way as during training (0-1 here)
         arr = arr / 255.0
 
         X = arr.reshape(1, -1)
 
-        # Try to get probabilities
+        # DEBUG: log some helpful diagnostics
+        logging.info(f"X shape: {X.shape}, dtype: {X.dtype}, min: {X.min():.4f}, max: {X.max():.4f}")
+        logging.info(f"Model type: {type(model)}, has_predict_proba: {hasattr(model, 'predict_proba')}")
+
+        # Try predict_proba (top 3)
         top = []
-        try:
-            probs = model.predict_proba(X)[0]
-            idx = np.argsort(probs)[::-1][:3]  # top 3 indices
-            top = [
-                {"label": CLASS_LABELS[i], "prob": float(probs[i])}
-                for i in idx
-            ]
-        except:
-            logging.info("Model has no predict_proba")
+        if hasattr(model, "predict_proba"):
+            try:
+                probs = model.predict_proba(X)[0]
+                idx = np.argsort(probs)[::-1][:3]
+                top = [{"label": (CLASS_LABELS[i] if i < len(CLASS_LABELS) else str(i)),
+                        "prob": float(probs[i])} for i in idx]
+            except Exception:
+                logging.exception("predict_proba failed")
 
-        # Predict class index
-        pred_index = int(model.predict(X)[0])
-        logging.info(f"Pred index = {pred_index}")
+        # Run predict
+        raw_pred = model.predict(X)[0]
+        logging.info(f"Raw model output (predict): {raw_pred!r}")
 
-        if pred_index < 0 or pred_index >= len(CLASS_LABELS):
-            return {"prediction": "Unknown", "top": top}
+        # If model.predict returns integers (class indices), map to CLASS_LABELS
+        if isinstance(raw_pred, (int, np.integer)):
+            pred_index = int(raw_pred)
+            if 0 <= pred_index < len(CLASS_LABELS):
+                prediction = CLASS_LABELS[pred_index]
+            else:
+                prediction = "Unknown"
+        else:
+            # Model probably returns string labels already
+            prediction = str(raw_pred)
 
-        return {
-            "prediction": CLASS_LABELS[pred_index],
-            "top": top
-        }
+        return {"prediction": prediction, "top": top}
 
     except Exception as e:
         logging.exception("Prediction error")
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+
 
 # ------------------------------
 # RUN SERVER
