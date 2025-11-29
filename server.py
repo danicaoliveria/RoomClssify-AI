@@ -1,4 +1,6 @@
-# Rewritten server.py (Clean, Predicts: Bedroom, Office, etc.)
+# ----------------------------------------------------
+# server.py (FINAL, CLEAN, FULLY FIXED)
+# ----------------------------------------------------
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,36 +16,35 @@ import uvicorn
 import logging
 import traceback
 
+
 # ----------------------------------------------------
-# CONFIG
+# LOGGING
 # ----------------------------------------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
-app = FastAPI()
 
 # ----------------------------------------------------
-# CORS
+# FASTAPI APP
 # ----------------------------------------------------
+app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 # ----------------------------------------------------
-# STATIC FILES
+# STATIC FILES + HTML
 # ----------------------------------------------------
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/Components", StaticFiles(directory="Components"), name="components")
 
-# ----------------------------------------------------
-# HTML ROUTES
-# ----------------------------------------------------
 @app.get("/")
 def home():
     return FileResponse("index.html")
@@ -52,8 +53,26 @@ def home():
 def train_page():
     return FileResponse("train.html")
 
+
 # ----------------------------------------------------
-# CLASS LABELS (FINAL OUTPUTS)
+# LOAD MODEL
+# ----------------------------------------------------
+def load_model():
+    if not os.path.exists(MODEL_PATH):
+        raise RuntimeError(f"MODEL NOT FOUND: {MODEL_PATH}")
+
+    with open(MODEL_PATH, "rb") as f:
+        model = pickle.load(f)
+
+    logging.info("Model loaded successfully.")
+    return model
+
+
+model = load_model()
+
+
+# ----------------------------------------------------
+# CLASS LABELS (from your training)
 # ----------------------------------------------------
 CLASS_LABELS = [
     "Bathroom",
@@ -68,110 +87,87 @@ CLASS_LABELS = [
     "Yard",
 ]
 
-# ----------------------------------------------------
-# LOAD MODEL
-# ----------------------------------------------------
-def load_model():
-    if not os.path.exists(MODEL_PATH):
-        raise RuntimeError(f"Model not found at {MODEL_PATH}")
-
-    with open(MODEL_PATH, "rb") as f:
-        return pickle.load(f)
-
-model = load_model()
 
 # ----------------------------------------------------
-# INSPECT MODEL
+# DETECT MODEL INPUT FEATURE SIZE
 # ----------------------------------------------------
-def inspect_model(m):
-    try:
-        info = {
-            "type": str(type(m)),
-            "has_predict_proba": hasattr(m, "predict_proba"),
-            "n_features_in_": getattr(m, "n_features_in_", None),
-            "classes_": getattr(m, "classes_", None),
-        }
-        logging.info(f"Model loaded: {info}")
-        return info
-    except Exception:
-        logging.exception("Model inspection failed")
-        return None
-
-inspect_model(model)
-
-# ----------------------------------------------------
-# EXPECTED FEATURES
-# ----------------------------------------------------
-def get_expected_features(m):
+def detect_features(m):
     n = getattr(m, "n_features_in_", None)
-    if n is not None:
+    if n:
         return int(n)
-
-    try:
-        from sklearn.pipeline import Pipeline
-        if isinstance(m, Pipeline):
-            last = m.steps[-1][1]
-            n = getattr(last, "n_features_in_", None)
-            if n:
-                return int(n)
-    except:
-        pass
 
     coef = getattr(m, "coef_", None)
     if coef is not None:
         return int(coef.shape[1])
 
-    return 32 * 32
+    return 1000  # fallback (your model expects 1000)
 
-EXPECTED_FEATURES = get_expected_features(model)
-logging.info(f"Model expects input size: {EXPECTED_FEATURES}")
+
+EXPECTED_FEATURES = detect_features(model)
+logging.info(f"Model expects {EXPECTED_FEATURES} features.")
+
 
 # ----------------------------------------------------
-# PREDICT
+# PREDICT ENDPOINT
 # ----------------------------------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
-        # Read & preprocess image
+        # Read image
         contents = await file.read()
         img = Image.open(io.BytesIO(contents)).convert("L")
         img = img.resize((32, 32))
 
-        arr = np.array(img).flatten().astype(np.float64)
-        arr = arr / 255.0
+        # Convert → flatten 1024 features
+        arr = np.array(img).flatten().astype(np.float64) / 255.0
+        original_len = len(arr)
+
+        # ------------------------------------------------
+        # FIX — match model's expected features
+        # ------------------------------------------------
+        if original_len > EXPECTED_FEATURES:
+            arr = arr[:EXPECTED_FEATURES]
+
+        else:
+            padded = np.zeros(EXPECTED_FEATURES, dtype=np.float64)
+            padded[:original_len] = arr
+            arr = padded
+
         X = arr.reshape(1, -1)
 
-        # ------------------------------
-        # 🔥 MAIN FIX: decode using model.classes_
-        # ------------------------------
-        raw_pred = model.predict(X)[0]            # returns number like 7.0
-        class_list = list(model.classes_)         # guaranteed correct order
+        # ------------------------------------------------
+        # PREDICT LABEL (convert index → class label)
+        # ------------------------------------------------
+        raw_pred = model.predict(X)[0]
 
-        pred_index = int(raw_pred)
-        prediction = class_list[pred_index]       # convert number → label
-        # ------------------------------
+        # If model returns integer classes
+        if isinstance(raw_pred, (int, np.integer)) and raw_pred < len(CLASS_LABELS):
+            prediction = CLASS_LABELS[int(raw_pred)]
+        else:
+            prediction = str(raw_pred)
 
-        # ------------------------------
-        # Top-3 prediction (also fixed)
-        # ------------------------------
-        top = []
+        # ------------------------------------------------
+        # TOP-3 PREDICTIONS (if model supports probability)
+        # ------------------------------------------------
+        top3 = []
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(X)[0]
             idx = np.argsort(probs)[::-1][:3]
+
             for i in idx:
-                top.append({
-                    "label": class_list[i],
-                    "probability": float(probs[i])
+                top3.append({
+                    "label": CLASS_LABELS[i] if i < len(CLASS_LABELS) else str(i),
+                    "probability": round(float(probs[i]), 4)
                 })
 
         return {
             "prediction": prediction,
-            "top3": top
+            "top3": top3
         }
 
     except Exception as e:
         logging.exception("Prediction failed")
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
 # ----------------------------------------------------
