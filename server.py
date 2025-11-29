@@ -132,56 +132,47 @@ logging.info(f"Model expects input size: {EXPECTED_FEATURES}")
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
-        # Read and preprocess image
+        # Read & preprocess image
         contents = await file.read()
-        img = Image.open(io.BytesIO(contents)).convert("L")  # grayscale
+        img = Image.open(io.BytesIO(contents)).convert("L")
         img = img.resize((32, 32))
 
         arr = np.array(img).flatten().astype(np.float64)
-        original_len = arr.size
-
-        # Match model input size
-        if original_len != EXPECTED_FEATURES:
-            if original_len > EXPECTED_FEATURES:
-                arr = arr[:EXPECTED_FEATURES]
-            else:
-                padded = np.zeros(EXPECTED_FEATURES, dtype=np.float64)
-                padded[:original_len] = arr
-                arr = padded
-
-        # Normalize
         arr = arr / 255.0
         X = arr.reshape(1, -1)
 
-        # Try top-3
+        # ------------------------------
+        # 🔥 MAIN FIX: decode using model.classes_
+        # ------------------------------
+        raw_pred = model.predict(X)[0]            # returns number like 7.0
+        class_list = list(model.classes_)         # guaranteed correct order
+
+        pred_index = int(raw_pred)
+        prediction = class_list[pred_index]       # convert number → label
+        # ------------------------------
+
+        # ------------------------------
+        # Top-3 prediction (also fixed)
+        # ------------------------------
         top = []
         if hasattr(model, "predict_proba"):
-            try:
-                probs = model.predict_proba(X)[0]
-                idx = np.argsort(probs)[::-1][:3]
-                top = [{
-                    "label": CLASS_LABELS[i] if i < len(CLASS_LABELS) else str(i),
-                    "prob": float(probs[i])
-                } for i in idx]
-            except:
-                logging.exception("predict_proba failed")
-
-        # Final prediction
-        raw = model.predict(X)[0]
-
-        if isinstance(raw, (int, np.integer)) and 0 <= raw < len(CLASS_LABELS):
-            prediction = CLASS_LABELS[int(raw)]
-        else:
-            prediction = str(raw)
+            probs = model.predict_proba(X)[0]
+            idx = np.argsort(probs)[::-1][:3]
+            for i in idx:
+                top.append({
+                    "label": class_list[i],
+                    "probability": float(probs[i])
+                })
 
         return {
             "prediction": prediction,
-            "top": top
+            "top3": top
         }
 
     except Exception as e:
         logging.exception("Prediction failed")
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+
 
 # ----------------------------------------------------
 # RUN SERVER
